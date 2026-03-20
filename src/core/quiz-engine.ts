@@ -1,4 +1,4 @@
-import type { QuizQuestion, QuizResult } from '../types.js';
+import { QUESTION_BRACKETS, type QuizQuestion, type QuizResult } from '../types.js';
 
 export function scoreQuiz(
   questions: QuizQuestion[],
@@ -28,4 +28,13 @@ export function scoreQuiz(
 
 export function shouldSkipQuiz(linesChanged: number, minLines: number): boolean {
   return linesChanged < minLines;
+}
+
+export function getQuestionCount(linesChanged: number): number {
+  for (const bracket of QUESTION_BRACKETS) {
+    if (linesChanged >= bracket.minLines && linesChanged <= bracket.maxLines) {
+      return bracket.questions;
+    }
+  }
+  return 8;
 }

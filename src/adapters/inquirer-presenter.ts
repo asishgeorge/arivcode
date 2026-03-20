@@ -1,4 +1,4 @@
-import { select, input, password } from '@inquirer/prompts';
+import { select, input, password, checkbox } from '@inquirer/prompts';
 import type { QuizPresenter, QuizQuestion } from '../types.js';
 
 export function createInquirerPresenter(): QuizPresenter {
@@ -48,6 +48,11 @@ export function createInquirerPrompter(): Prompter {
             message: q.message,
             choices: q.choices,
             default: q.default,
+          });
+        } else if (q.type === 'checkbox') {
+          results[q.name] = await checkbox({
+            message: q.message,
+            choices: q.choices,
           });
         } else if (q.type === 'password') {
           results[q.name] = await password({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scoreQuiz, shouldSkipQuiz } from '../../src/core/quiz-engine.js';
+import { scoreQuiz, shouldSkipQuiz, getQuestionCount } from '../../src/core/quiz-engine.js';
 import type { QuizQuestion } from '../../src/types.js';
 
 const questions: QuizQuestion[] = [
@@ -84,6 +84,35 @@ describe('quiz-engine', () => {
 
     it('returns false when linesChanged equals minLines exactly', () => {
       expect(shouldSkipQuiz(10, 10)).toBe(false);
+    });
+  });
+
+  describe('getQuestionCount', () => {
+    it('returns 8 for 10-100 lines', () => {
+      expect(getQuestionCount(10)).toBe(8);
+      expect(getQuestionCount(50)).toBe(8);
+      expect(getQuestionCount(100)).toBe(8);
+    });
+
+    it('returns 12 for 101-250 lines', () => {
+      expect(getQuestionCount(101)).toBe(12);
+      expect(getQuestionCount(150)).toBe(12);
+      expect(getQuestionCount(250)).toBe(12);
+    });
+
+    it('returns 16 for 251-500 lines', () => {
+      expect(getQuestionCount(251)).toBe(16);
+      expect(getQuestionCount(400)).toBe(16);
+      expect(getQuestionCount(500)).toBe(16);
+    });
+
+    it('returns 20 for 500+ lines', () => {
+      expect(getQuestionCount(501)).toBe(20);
+      expect(getQuestionCount(1000)).toBe(20);
+    });
+
+    it('returns 8 as fallback for values below brackets', () => {
+      expect(getQuestionCount(5)).toBe(8);
     });
   });
 });

@@ -7,6 +7,7 @@ import {
   type ArivConfig,
   type LLMClient,
   type Provider,
+  type QuizContext,
   type QuizResponse,
 } from '../types.js';
 import { buildQuizPrompt } from './prompt-builder.js';
@@ -26,10 +27,10 @@ export function resolveProvider(provider: Provider, apiKey: string) {
 
 export function createLLMClient(config: ArivConfig): LLMClient {
   return {
-    async generateQuiz(diff: string, cfg: ArivConfig): Promise<QuizResponse> {
+    async generateQuiz(context: QuizContext, cfg: ArivConfig): Promise<QuizResponse> {
       const provider = resolveProvider(cfg.provider, cfg.apiKey);
       const model = provider(cfg.model);
-      const { system, user } = buildQuizPrompt(diff, cfg);
+      const { system, user } = buildQuizPrompt(context, cfg);
 
       const { object } = await generateObject({
         model,

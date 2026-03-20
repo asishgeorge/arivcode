@@ -20,6 +20,16 @@ export function countChangedLines(diff: string): number {
   return count;
 }
 
+export function extractPathsFromDiff(diff: string): string[] {
+  const paths = new Set<string>();
+  const regex = /^diff --git a\/(.+?) b\/(.+?)$/gm;
+  let match;
+  while ((match = regex.exec(diff)) !== null) {
+    paths.add(match[2]);
+  }
+  return [...paths];
+}
+
 export function createGitClient(runner: ProcessRunner): GitClient {
   return {
     async getStagedDiff(): Promise<DiffResult> {
@@ -28,6 +38,24 @@ export function createGitClient(runner: ProcessRunner): GitClient {
         raw: stdout,
         linesChanged: countChangedLines(stdout),
       };
+    },
+
+    async getRepoTree(): Promise<string> {
+      const { stdout } = await runner.exec('git ls-files');
+      return stdout.trim();
+    },
+
+    async getFileContents(paths: string[]): Promise<Record<string, string>> {
+      const contents: Record<string, string> = {};
+      for (const path of paths) {
+        try {
+          const { stdout } = await runner.exec(`git show :${path}`);
+          contents[path] = stdout;
+        } catch {
+          // File may have been deleted in this diff — skip
+        }
+      }
+      return contents;
     },
   };
 }

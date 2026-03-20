@@ -23,10 +23,11 @@ function createLogger(): Logger {
 
 function createConfigStore(): ConfigStore {
   const fs = createNodeFs();
+  const runner = createNodeProcessRunner();
   return {
-    loadConfig: (projectDir?: string) => loadConfig(fs, projectDir ?? process.cwd()),
+    loadConfig: (projectDir?: string) => loadConfig(fs, runner, projectDir ?? process.cwd()),
     saveConfig: (config, scope, projectDir?) =>
-      saveConfig(fs, config, scope, projectDir ?? process.cwd()),
+      saveConfig(fs, config, scope, projectDir ?? process.cwd(), runner),
   };
 }
 

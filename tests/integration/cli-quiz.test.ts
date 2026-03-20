@@ -7,6 +7,7 @@ import type {
   GitClient,
   LLMClient,
   Logger,
+  QuizContext,
   QuizPresenter,
   QuizQuestion,
 } from '../../src/types.js';
@@ -49,12 +50,18 @@ function createMockConfigStore(config: ArivConfig = validConfig): ConfigStore {
 }
 
 function createMockGitClient(diff: DiffResult): GitClient {
-  return { getStagedDiff: async () => diff };
+  return {
+    getStagedDiff: async () => diff,
+    getRepoTree: async () => 'src/index.ts\npackage.json',
+    getFileContents: async () => ({ 'src/index.ts': '// file content' }),
+  };
 }
 
 function createMockLLMClient(): LLMClient {
   return {
-    generateQuiz: async () => ({ questions: sampleQuestions }),
+    generateQuiz: async (_context: QuizContext, _config: ArivConfig) => ({
+      questions: sampleQuestions,
+    }),
   };
 }
 
@@ -91,7 +98,7 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter(['A', 'B', 'C', 'B']), // 100%
       logger,
@@ -103,7 +110,7 @@ describe('quiz command', () => {
   it('fails with exit 1 when score < 80%', async () => {
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter(['D', 'D', 'D', 'D']), // 0%
       logger: createMockLogger(),
@@ -116,7 +123,7 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter([]),
       logger,
@@ -130,7 +137,7 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore({ ...DEFAULT_CONFIG, apiKey: '' }),
-      gitClient: createMockGitClient({ raw: 'big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter([]),
       logger,

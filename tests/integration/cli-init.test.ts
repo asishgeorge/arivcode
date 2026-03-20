@@ -39,16 +39,15 @@ function createMockLogger(): Logger & { messages: string[] } {
 }
 
 describe('init command', () => {
-  it('prompts for provider, apiKey, model, difficulty, language, threshold', async () => {
+  it('prompts for provider, apiKey, model, difficulty, threshold, focusAreas', async () => {
     const answers = {
       provider: 'openai',
       apiKey: 'sk-test-123',
       model: 'gpt-4o-mini',
       difficulty: 'intermediate',
-      language: 'typescript',
       minLines: 10,
-      questionsPerQuiz: 4,
       passingScore: 80,
+      focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
     };
     const { store, getSaved } = createMockConfigStore();
     await runInit({
@@ -61,6 +60,7 @@ describe('init command', () => {
     expect(config).toBeDefined();
     expect(config!.apiKey).toBe('sk-test-123');
     expect(config!.provider).toBe('openai');
+    expect(config!.focusAreas).toEqual(['syntax', 'execution', 'architecture', 'edge-cases']);
   });
 
   it('saves config to project scope by default', async () => {
@@ -71,10 +71,9 @@ describe('init command', () => {
         apiKey: 'sk-test',
         model: 'gpt-4o-mini',
         difficulty: 'beginner',
-        language: 'python',
         minLines: 5,
-        questionsPerQuiz: 3,
         passingScore: 70,
+        focusAreas: ['syntax'],
       }),
       configStore: store,
       logger: createMockLogger(),
@@ -91,15 +90,34 @@ describe('init command', () => {
         apiKey: 'sk-ant-test',
         model: 'claude-3-haiku-20240307',
         difficulty: 'advanced',
-        language: 'rust',
         minLines: 15,
-        questionsPerQuiz: 5,
         passingScore: 90,
+        focusAreas: ['architecture', 'edge-cases'],
       }),
       configStore: store,
       logger: createMockLogger(),
       options: { global: true },
     });
     expect(getSaved().scope).toBe('global');
+  });
+
+  it('defaults to all focus areas when none selected', async () => {
+    const { store, getSaved } = createMockConfigStore();
+    await runInit({
+      prompter: createMockPrompter({
+        provider: 'openai',
+        apiKey: 'sk-test',
+        model: 'gpt-4o-mini',
+        difficulty: 'intermediate',
+        minLines: 10,
+        passingScore: 80,
+        focusAreas: [],
+      }),
+      configStore: store,
+      logger: createMockLogger(),
+      options: {},
+    });
+    const { config } = getSaved();
+    expect(config!.focusAreas).toEqual(['syntax', 'execution', 'architecture', 'edge-cases']);
   });
 });

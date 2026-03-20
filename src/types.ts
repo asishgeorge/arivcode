@@ -5,6 +5,20 @@ import { z } from 'zod';
 export const SUPPORTED_PROVIDERS = ['openai', 'google', 'anthropic'] as const;
 export type Provider = (typeof SUPPORTED_PROVIDERS)[number];
 
+// === Focus Areas ===
+
+export const FOCUS_AREAS = ['syntax', 'execution', 'architecture', 'edge-cases'] as const;
+export type FocusArea = (typeof FOCUS_AREAS)[number];
+
+// === Question Brackets ===
+
+export const QUESTION_BRACKETS = [
+  { minLines: 10, maxLines: 100, questions: 8 },
+  { minLines: 101, maxLines: 250, questions: 12 },
+  { minLines: 251, maxLines: 500, questions: 16 },
+  { minLines: 501, maxLines: Infinity, questions: 20 },
+] as const;
+
 // === Config ===
 
 export interface ArivConfig {
@@ -12,10 +26,9 @@ export interface ArivConfig {
   apiKey: string;
   model: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  language: string;
   minLines: number;
-  questionsPerQuiz: number;
   passingScore: number;
+  focusAreas: FocusArea[];
 }
 
 export type PartialArivConfig = Partial<ArivConfig>;
@@ -25,11 +38,21 @@ export const DEFAULT_CONFIG: ArivConfig = {
   apiKey: '',
   model: 'gpt-4o-mini',
   difficulty: 'intermediate',
-  language: 'typescript',
   minLines: 10,
-  questionsPerQuiz: 4,
   passingScore: 80,
+  focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
 };
+
+// === Project Registry ===
+
+export interface ProjectRegistryEntry {
+  absolutePath: string;
+  remoteUrl: string;
+}
+
+export interface ProjectRegistry {
+  projects: Record<string, ProjectRegistryEntry>;
+}
 
 // === Quiz (Zod schemas for generateObject) ===
 
@@ -66,6 +89,15 @@ export interface QuizResult {
   }>;
 }
 
+// === Quiz Context ===
+
+export interface QuizContext {
+  diff: string;
+  repoTree: string;
+  touchedFileContents: Record<string, string>;
+  questionCount: number;
+}
+
 // === Git ===
 
 export interface DiffResult {
@@ -77,10 +109,12 @@ export interface DiffResult {
 
 export interface GitClient {
   getStagedDiff(): Promise<DiffResult>;
+  getRepoTree(): Promise<string>;
+  getFileContents(paths: string[]): Promise<Record<string, string>>;
 }
 
 export interface LLMClient {
-  generateQuiz(diff: string, config: ArivConfig): Promise<QuizResponse>;
+  generateQuiz(context: QuizContext, config: ArivConfig): Promise<QuizResponse>;
 }
 
 export interface ConfigStore {

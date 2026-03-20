@@ -64,21 +64,6 @@ export async function runInit(deps: InitDeps): Promise<void> {
     },
     {
       type: 'list',
-      name: 'language',
-      message: 'Primary language of your codebase:',
-      choices: [
-        { name: 'TypeScript', value: 'typescript' },
-        { name: 'JavaScript', value: 'javascript' },
-        { name: 'Python', value: 'python' },
-        { name: 'Go', value: 'go' },
-        { name: 'Rust', value: 'rust' },
-        { name: 'Java', value: 'java' },
-        { name: 'Other', value: 'other' },
-      ],
-      default: 'typescript',
-    },
-    {
-      type: 'list',
       name: 'minLines',
       message: 'Minimum changed lines to trigger quiz:',
       choices: [
@@ -88,17 +73,6 @@ export async function runInit(deps: InitDeps): Promise<void> {
         { name: '50 lines', value: 50 },
       ],
       default: 10,
-    },
-    {
-      type: 'list',
-      name: 'questionsPerQuiz',
-      message: 'Questions per quiz:',
-      choices: [
-        { name: '3 questions', value: 3 },
-        { name: '4 questions (recommended)', value: 4 },
-        { name: '5 questions', value: 5 },
-      ],
-      default: 4,
     },
     {
       type: 'list',
@@ -114,6 +88,20 @@ export async function runInit(deps: InitDeps): Promise<void> {
     },
   ]);
 
+  const { focusAreas } = await prompter.prompt([
+    {
+      type: 'checkbox',
+      name: 'focusAreas',
+      message: 'Select quiz focus areas:',
+      choices: [
+        { name: 'Syntax — language constructs, API signatures', value: 'syntax' },
+        { name: 'Execution — control flow, state changes', value: 'execution' },
+        { name: 'Architecture — patterns, design decisions', value: 'architecture' },
+        { name: 'Edge Cases — boundary conditions, error paths', value: 'edge-cases' },
+      ],
+    },
+  ]);
+
   answers.provider = provider;
 
   const config: PartialArivConfig = {
@@ -121,10 +109,9 @@ export async function runInit(deps: InitDeps): Promise<void> {
     apiKey: answers.apiKey,
     model: answers.model,
     difficulty: answers.difficulty,
-    language: answers.language,
     minLines: Number(answers.minLines),
-    questionsPerQuiz: Number(answers.questionsPerQuiz),
     passingScore: Number(answers.passingScore),
+    focusAreas: focusAreas.length > 0 ? focusAreas : ['syntax', 'execution', 'architecture', 'edge-cases'],
   };
 
   const scope = options.global ? 'global' : 'project';

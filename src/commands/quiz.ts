@@ -6,7 +6,8 @@ import type {
   QuizPresenter,
 } from '../types.js';
 import { validateConfig } from '../core/config.js';
-import { scoreQuiz, shouldSkipQuiz } from '../core/quiz-engine.js';
+import { extractPathsFromDiff } from '../core/git.js';
+import { getQuestionCount, scoreQuiz, shouldSkipQuiz } from '../core/quiz-engine.js';
 
 export interface QuizOptions {
   skip?: boolean;
@@ -51,7 +52,13 @@ export async function runQuiz(deps: QuizDeps): Promise<number> {
     return 0;
   }
 
-  const quizResponse = await llmClient.generateQuiz(diff.raw, config);
+  const questionCount = getQuestionCount(diff.linesChanged);
+  const repoTree = await gitClient.getRepoTree();
+  const touchedPaths = extractPathsFromDiff(diff.raw);
+  const touchedFileContents = await gitClient.getFileContents(touchedPaths);
+
+  const context = { diff: diff.raw, repoTree, touchedFileContents, questionCount };
+  const quizResponse = await llmClient.generateQuiz(context, config);
   const answers = await presenter.presentQuiz(quizResponse.questions);
   const result = scoreQuiz(quizResponse.questions, answers, config.passingScore);
 
