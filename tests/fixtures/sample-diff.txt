@@ -1,0 +1,17 @@
+diff --git a/src/utils.ts b/src/utils.ts
+index 1234567..abcdefg 100644
+--- a/src/utils.ts
++++ b/src/utils.ts
+@@ -1,5 +1,10 @@
+-import { oldFunction } from './old';
++import { newFunction } from './new';
++import { helper } from './helper';
+
+ export function calculate(a: number, b: number): number {
+-  return oldFunction(a, b);
++  const result = newFunction(a, b);
++  if (result < 0) {
++    return 0;
++  }
++  return result;
+ }
