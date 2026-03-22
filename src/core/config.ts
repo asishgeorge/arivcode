@@ -4,7 +4,6 @@ import {
   SUPPORTED_PROVIDERS,
   type ArivConfig,
   type FileSystem,
-  type FocusArea,
   type PartialArivConfig,
   type ProcessRunner,
   type ProjectRegistry,
@@ -172,8 +171,8 @@ export async function loadConfig(
 
   return {
     ...DEFAULT_CONFIG,
-    ...(globalConfig ?? {}),
-    ...(projectConfig ?? {}),
+    ...globalConfig,
+    ...projectConfig,
   } as ArivConfig;
 }
 

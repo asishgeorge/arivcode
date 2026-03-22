@@ -77,54 +77,66 @@ function buildFocusAreaInstructions(focusAreas: FocusArea[], questionCount: numb
   return instructions;
 }
 
+// === Truncation Helpers ===
+
+function truncateFileContents(
+  contents: Record<string, string>,
+  remaining: number,
+): { parts: string[]; consumed: number } {
+  const entries = Object.entries(contents).sort((a, b) => a[1].length - b[1].length);
+  const parts: string[] = [];
+  let used = 0;
+
+  for (const [path, content] of entries) {
+    const part = `### ${path}\n\`\`\`\n${content}\n\`\`\``;
+    if (part.length <= remaining - used) {
+      parts.push(part);
+      used += part.length;
+    } else if (remaining - used > 200) {
+      const truncated = content.substring(0, remaining - used - 200);
+      parts.push(`### ${path}\n\`\`\`\n${truncated}\n[truncated]\n\`\`\``);
+      used = remaining;
+      break;
+    }
+  }
+
+  return { parts, consumed: used };
+}
+
+function truncateRepoTree(tree: string, remaining: number): string {
+  if (tree.length <= remaining - 50) return tree;
+
+  const lines = tree.split('\n');
+  const truncatedLines: string[] = [];
+  let len = 0;
+  for (const line of lines) {
+    if (len + line.length + 1 > remaining - 80) break;
+    truncatedLines.push(line);
+    len += line.length + 1;
+  }
+  return truncatedLines.join('\n') + '\n[truncated]';
+}
+
 // === User Prompt Assembly ===
 
 function buildUserPrompt(context: QuizContext): string {
   const sections: string[] = [];
   let remaining = MAX_TOTAL_LENGTH;
 
-  // Diff is always included in full
   const diffSection = `## Git Diff\n\n${context.diff}`;
   sections.push(diffSection);
   remaining -= diffSection.length;
 
-  // Touched file contents — truncate largest files first if needed
   if (Object.keys(context.touchedFileContents).length > 0) {
-    const entries = Object.entries(context.touchedFileContents)
-      .sort((a, b) => a[1].length - b[1].length);
-
-    const fileParts: string[] = [];
-    for (const [path, content] of entries) {
-      const part = `### ${path}\n\`\`\`\n${content}\n\`\`\``;
-      if (part.length <= remaining) {
-        fileParts.push(part);
-        remaining -= part.length;
-      } else if (remaining > 200) {
-        const truncated = content.substring(0, remaining - 200);
-        fileParts.push(`### ${path}\n\`\`\`\n${truncated}\n[truncated]\n\`\`\``);
-        remaining = 0;
-        break;
-      }
-    }
-    if (fileParts.length > 0) {
-      sections.push(`## Full File Contents\n\n${fileParts.join('\n\n')}`);
+    const { parts, consumed } = truncateFileContents(context.touchedFileContents, remaining);
+    remaining -= consumed;
+    if (parts.length > 0) {
+      sections.push(`## Full File Contents\n\n${parts.join('\n\n')}`);
     }
   }
 
-  // Repo tree — truncate if needed
   if (context.repoTree && remaining > 100) {
-    let tree = context.repoTree;
-    if (tree.length > remaining - 50) {
-      const lines = tree.split('\n');
-      const truncatedLines: string[] = [];
-      let len = 0;
-      for (const line of lines) {
-        if (len + line.length + 1 > remaining - 80) break;
-        truncatedLines.push(line);
-        len += line.length + 1;
-      }
-      tree = truncatedLines.join('\n') + '\n[truncated]';
-    }
+    const tree = truncateRepoTree(context.repoTree, remaining);
     sections.push(`## Repository Structure\n\n${tree}`);
   }
 
