@@ -128,6 +128,30 @@ describe('config', () => {
       expect(files[GLOBAL_PATH]).toBe(JSON.stringify({ apiKey: 'sk-test' }, null, 2));
     });
 
+    it('merges with existing global config instead of overwriting', async () => {
+      const files: Record<string, string> = {};
+      const fs = createMockFs(files);
+      await saveConfig(fs, { apiKey: 'sk-test', model: 'gpt-4o' }, 'global');
+      await saveConfig(fs, { model: 'gpt-4o-mini' }, 'global');
+      const saved = JSON.parse(files[GLOBAL_PATH]);
+      expect(saved.apiKey).toBe('sk-test');
+      expect(saved.model).toBe('gpt-4o-mini');
+    });
+
+    it('merges with existing project config instead of overwriting', async () => {
+      const files: Record<string, string> = {};
+      const fs = createMockFs(files);
+      const runner = createMockRunner();
+      await saveConfig(fs, { apiKey: 'sk-test', model: 'gpt-4o' }, 'project', '/project', runner);
+      await saveConfig(fs, { model: 'gpt-4o-mini' }, 'project', '/project', runner);
+
+      const registry = await loadRegistry(fs);
+      const names = Object.keys(registry.projects);
+      const saved = JSON.parse(files[`${CONFIG_DIR}/projects/${names[0]}.json`]);
+      expect(saved.apiKey).toBe('sk-test');
+      expect(saved.model).toBe('gpt-4o-mini');
+    });
+
     it('throws when project scope used without runner', async () => {
       const fs = createMockFs();
       await expect(saveConfig(fs, { apiKey: 'sk-test' }, 'project', '/project')).rejects.toThrow(

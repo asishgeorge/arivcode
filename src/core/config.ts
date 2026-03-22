@@ -329,7 +329,8 @@ export async function saveConfig(
   runner?: ProcessRunner,
 ): Promise<void> {
   if (scope === 'global') {
-    await writeJsonFile(fs, GLOBAL_CONFIG_PATH, config);
+    const existing = (await readJsonFile<PartialArivConfig>(fs, GLOBAL_CONFIG_PATH)) ?? {};
+    await writeJsonFile(fs, GLOBAL_CONFIG_PATH, { ...existing, ...config });
     return;
   }
 
@@ -344,7 +345,9 @@ export async function saveConfig(
     found = { name, entry: registry.projects[name] };
   }
 
-  await writeJsonFile(fs, `${PROJECTS_DIR}/${found.name}.json`, config);
+  const configPath = `${PROJECTS_DIR}/${found.name}.json`;
+  const existing = (await readJsonFile<PartialArivConfig>(fs, configPath)) ?? {};
+  await writeJsonFile(fs, configPath, { ...existing, ...config });
 }
 
 // === Validation ===
