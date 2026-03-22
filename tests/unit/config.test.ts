@@ -29,6 +29,7 @@ function createMockFs(files: Record<string, string> = {}): FileSystem {
       delete files[path];
     },
     mkdir: async () => {},
+    chmod: async () => {},
   };
 }
 

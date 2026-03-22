@@ -16,6 +16,7 @@ function createMockFs(files: Record<string, string> = {}): FileSystem {
       delete files[path];
     },
     mkdir: async () => {},
+    chmod: async () => {},
   };
 }
 
@@ -26,6 +27,8 @@ function createMockLogger(): Logger & { messages: string[] } {
     info: (msg: string) => messages.push(msg),
     error: (msg: string) => messages.push(msg),
     warn: (msg: string) => messages.push(msg),
+    startSpinner: () => {},
+    stopSpinner: () => {},
   };
 }
 

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { chmod } from 'fs/promises';
 import { join } from 'path';
 import chalk from 'chalk';
+import ora, { type Ora } from 'ora';
 import { createNodeFs } from './adapters/node-fs.js';
 import { createNodeProcessRunner } from './adapters/node-process.js';
 import { createInquirerPresenter, createInquirerPrompter } from './adapters/inquirer-presenter.js';
@@ -14,10 +15,23 @@ import { runHookInstall, runHookUninstall } from './commands/hook.js';
 import type { ConfigStore, Logger } from './types.js';
 
 function createLogger(): Logger {
+  let spinner: Ora | null = null;
   return {
     info: (msg: string) => console.log(chalk.green('✔'), msg),
     error: (msg: string) => console.error(chalk.red('✖'), msg),
     warn: (msg: string) => console.warn(chalk.yellow('⚠'), msg),
+    startSpinner: (msg: string) => {
+      spinner = ora({ text: msg, discardStdin: false }).start();
+    },
+    stopSpinner: (success = true, msg?: string) => {
+      if (!spinner) return;
+      if (success) {
+        spinner.succeed(msg);
+      } else {
+        spinner.fail(msg);
+      }
+      spinner = null;
+    },
   };
 }
 
@@ -78,6 +92,8 @@ export function createCli(): Command {
         configStore,
         logger,
         options: { global: opts.global },
+        fs: createNodeFs(),
+        projectDir: process.cwd(),
       });
     });
 

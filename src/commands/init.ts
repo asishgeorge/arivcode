@@ -1,4 +1,5 @@
-import type { ConfigStore, Logger, PartialArivConfig } from '../types.js';
+import type { ConfigStore, FileSystem, Logger, PartialArivConfig } from '../types.js';
+import { runHookInstall } from './hook.js';
 
 export interface InitOptions {
   global?: boolean;
@@ -13,10 +14,12 @@ export interface InitDeps {
   configStore: ConfigStore;
   logger: Logger;
   options: InitOptions;
+  fs?: FileSystem;
+  projectDir?: string;
 }
 
 export async function runInit(deps: InitDeps): Promise<void> {
-  const { prompter, configStore, logger, options } = deps;
+  const { prompter, configStore, logger, options, fs, projectDir } = deps;
 
   const modelsByProvider: Record<string, string[]> = {
     openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1-nano'],
@@ -117,4 +120,23 @@ export async function runInit(deps: InitDeps): Promise<void> {
   const scope = options.global ? 'global' : 'project';
   await configStore.saveConfig(config, scope);
   logger.info(`Config saved (${scope}).`);
+
+  // Offer to install git pre-commit hook (only for project-scoped init)
+  if (!options.global && fs && projectDir) {
+    const { installHook } = await prompter.prompt([
+      {
+        type: 'list',
+        name: 'installHook',
+        message: 'Would you like to install a git pre-commit hook?',
+        choices: [
+          { name: 'Yes — run quiz before every commit', value: true },
+          { name: 'No — I\'ll set it up later', value: false },
+        ],
+      },
+    ]);
+
+    if (installHook) {
+      await runHookInstall({ fs, logger, projectDir });
+    }
+  }
 }

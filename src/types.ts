@@ -136,6 +136,7 @@ export interface FileSystem {
   exists(path: string): Promise<boolean>;
   unlink(path: string): Promise<void>;
   mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
+  chmod(path: string, mode: number): Promise<void>;
 }
 
 export interface ProcessRunner {
@@ -146,4 +147,6 @@ export interface Logger {
   info(message: string): void;
   error(message: string): void;
   warn(message: string): void;
+  startSpinner(message: string): void;
+  stopSpinner(success?: boolean, message?: string): void;
 }

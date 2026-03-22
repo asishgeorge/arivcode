@@ -81,7 +81,9 @@ async function readJsonFile<T>(fs: FileSystem, path: string): Promise<T | null> 
 async function writeJsonFile(fs: FileSystem, path: string, data: unknown): Promise<void> {
   const dir = path.substring(0, path.lastIndexOf('/'));
   await fs.mkdir(dir, { recursive: true });
+  await fs.chmod(dir, 0o700);
   await fs.writeFile(path, JSON.stringify(data, null, 2));
+  await fs.chmod(path, 0o600);
 }
 
 // === Registry ===

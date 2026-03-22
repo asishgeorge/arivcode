@@ -1,7 +1,12 @@
 import type { FileSystem, Logger } from '../types.js';
 
 const HOOK_SCRIPT = `#!/bin/sh
-exec arivcode quiz
+if [ -t 0 ]; then
+  arivcode quiz
+else
+  exec < /dev/tty
+  arivcode quiz
+fi
 `;
 
 export interface HookDeps {

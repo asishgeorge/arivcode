@@ -145,13 +145,15 @@ export function buildQuizPrompt(
   const difficulty = DIFFICULTY_GUIDANCE[config.difficulty] ?? DIFFICULTY_GUIDANCE.intermediate;
   const focusInstructions = buildFocusAreaInstructions(config.focusAreas, context.questionCount);
 
-  const system = `You are a code review quiz generator. Given a git diff along with repository context, generate exactly ${context.questionCount} multiple-choice questions that test whether the developer truly understands the changes they made.
+  const system = `You are a code review quiz generator. Given a git diff along with repository context, generate up to ${context.questionCount} multiple-choice questions that test whether the developer truly understands the changes they made.
 
 Rules:
 - Questions must be specific to THIS diff, not general programming knowledge
 - Each question has 4 options (A-D) with exactly 1 correct answer
 - Include a brief explanation for the correct answer
 - Use the repository structure and full file contents to understand how the changes fit into the broader codebase
+- Never repeat or rephrase the same question — each question must test a distinct concept
+- If the diff does not contain enough meaningful changes to justify ${context.questionCount} unique questions, generate fewer. Quality over quantity.
 ${langLine ? `- ${langLine}` : ''}
 
 ${difficulty}

@@ -16,5 +16,6 @@ export function createNodeFs(): FileSystem {
     unlink: (path: string) => fs.unlink(path),
     mkdir: (path: string, options?: { recursive?: boolean }) =>
       fs.mkdir(path, options).then(() => {}),
+    chmod: (path: string, mode: number) => fs.chmod(path, mode),
   };
 }
