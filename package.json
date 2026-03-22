@@ -1,8 +1,20 @@
 {
   "name": "arivcode",
-  "version": "0.1.0",
+  "version": "0.0.1-alpha.1",
   "description": "CLI tool that quizzes developers on their code changes before committing",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asishgeorge/arivcode.git"
+  },
+  "homepage": "https://github.com/asishgeorge/arivcode#readme",
+  "bugs": {
+    "url": "https://github.com/asishgeorge/arivcode/issues"
+  },
+  "author": "asishgeorge",
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "arivcode": "./dist/index.js"
   },
@@ -26,7 +38,6 @@
     "code-review",
     "pre-commit"
   ],
-  "author": "",
   "license": "MIT",
   "packageManager": "pnpm@10.32.1",
   "dependencies": {

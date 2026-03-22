@@ -41,15 +41,12 @@ function createMockLogger(): Logger & { messages: string[] } {
 }
 
 describe('init command', () => {
-  it('prompts for provider, apiKey, model, difficulty, threshold, focusAreas', async () => {
+  it('saves provider, apiKey, model in simple mode', async () => {
     const answers = {
       provider: 'openai',
       apiKey: 'sk-test-123',
       model: 'gpt-4o-mini',
-      difficulty: 'intermediate',
-      minLines: 10,
-      passingScore: 80,
-      focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
+      installHook: false,
     };
     const { store, getSaved } = createMockConfigStore();
     await runInit({
@@ -62,7 +59,10 @@ describe('init command', () => {
     expect(config).toBeDefined();
     expect(config!.apiKey).toBe('sk-test-123');
     expect(config!.provider).toBe('openai');
-    expect(config!.focusAreas).toEqual(['syntax', 'execution', 'architecture', 'edge-cases']);
+    expect(config!.model).toBe('gpt-4o-mini');
+    // Advanced fields should not be set in simple mode
+    expect(config!.difficulty).toBeUndefined();
+    expect(config!.focusAreas).toBeUndefined();
   });
 
   it('saves config to project scope by default', async () => {
@@ -72,10 +72,7 @@ describe('init command', () => {
         provider: 'openai',
         apiKey: 'sk-test',
         model: 'gpt-4o-mini',
-        difficulty: 'beginner',
-        minLines: 5,
-        passingScore: 70,
-        focusAreas: ['syntax'],
+        installHook: false,
       }),
       configStore: store,
       logger: createMockLogger(),
@@ -91,10 +88,7 @@ describe('init command', () => {
         provider: 'anthropic',
         apiKey: 'sk-ant-test',
         model: 'claude-3-haiku-20240307',
-        difficulty: 'advanced',
-        minLines: 15,
-        passingScore: 90,
-        focusAreas: ['architecture', 'edge-cases'],
+        installHook: false,
       }),
       configStore: store,
       logger: createMockLogger(),
@@ -103,7 +97,35 @@ describe('init command', () => {
     expect(getSaved().scope).toBe('global');
   });
 
-  it('defaults to all focus areas when none selected', async () => {
+  it('includes all fields in advanced mode', async () => {
+    const answers = {
+      provider: 'openai',
+      apiKey: 'sk-test-123',
+      model: 'gpt-4o-mini',
+      difficulty: 'advanced',
+      minLines: 20,
+      passingScore: 90,
+      focusAreas: ['syntax', 'architecture'],
+      scoreInCommitMessage: true,
+      installHook: false,
+    };
+    const { store, getSaved } = createMockConfigStore();
+    await runInit({
+      prompter: createMockPrompter(answers),
+      configStore: store,
+      logger: createMockLogger(),
+      options: { advanced: true },
+    });
+    const { config } = getSaved();
+    expect(config).toBeDefined();
+    expect(config!.provider).toBe('openai');
+    expect(config!.difficulty).toBe('advanced');
+    expect(config!.passingScore).toBe(90);
+    expect(config!.scoreInCommitMessage).toBe(true);
+    expect(config!.focusAreas).toEqual(['syntax', 'architecture']);
+  });
+
+  it('defaults to all focus areas when none selected in advanced mode', async () => {
     const { store, getSaved } = createMockConfigStore();
     await runInit({
       prompter: createMockPrompter({
@@ -114,10 +136,12 @@ describe('init command', () => {
         minLines: 10,
         passingScore: 80,
         focusAreas: [],
+        scoreInCommitMessage: true,
+        installHook: false,
       }),
       configStore: store,
       logger: createMockLogger(),
-      options: {},
+      options: { advanced: true },
     });
     const { config } = getSaved();
     expect(config!.focusAreas).toEqual(['syntax', 'execution', 'architecture', 'edge-cases']);

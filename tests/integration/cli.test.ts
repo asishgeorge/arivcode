@@ -40,6 +40,6 @@ describe('cli', () => {
 
   it('has correct version', () => {
     const program = createCli();
-    expect(program.version()).toBe('0.1.0');
+    expect(program.version()).toBe('0.0.0-dev');
   });
 });

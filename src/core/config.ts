@@ -273,6 +273,25 @@ export async function registerProject(
   return name;
 }
 
+// === Config Migration ===
+
+export const CURRENT_CONFIG_VERSION = 1;
+
+export function migrateConfig(config: Record<string, unknown>): PartialArivConfig {
+  const fromVersion = (config.configVersion as number) ?? 0;
+  if (fromVersion >= CURRENT_CONFIG_VERSION) return config as PartialArivConfig;
+
+  const migrated = { ...config };
+
+  // v0 → v1: add scoreInCommitMessage default
+  if (fromVersion < 1) {
+    migrated.scoreInCommitMessage ??= DEFAULT_CONFIG.scoreInCommitMessage;
+  }
+
+  migrated.configVersion = CURRENT_CONFIG_VERSION;
+  return migrated as PartialArivConfig;
+}
+
 // === Config Loading / Saving ===
 
 export async function loadConfig(
@@ -293,11 +312,13 @@ export async function loadConfig(
     }
   }
 
-  return {
+  const merged = {
     ...DEFAULT_CONFIG,
     ...globalConfig,
     ...projectConfig,
   } as ArivConfig;
+
+  return migrateConfig(merged as unknown as Record<string, unknown>) as unknown as ArivConfig;
 }
 
 export async function saveConfig(

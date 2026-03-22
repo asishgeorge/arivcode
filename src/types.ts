@@ -30,6 +30,7 @@ export interface ArivConfig {
   passingScore: number;
   focusAreas: FocusArea[];
   scoreInCommitMessage: boolean;
+  configVersion: number;
 }
 
 export type PartialArivConfig = Partial<ArivConfig>;
@@ -37,12 +38,13 @@ export type PartialArivConfig = Partial<ArivConfig>;
 export const DEFAULT_CONFIG: ArivConfig = {
   provider: 'openai',
   apiKey: '',
-  model: 'gpt-4o-mini',
+  model: 'gpt-5.4-mini',
   difficulty: 'intermediate',
   minLines: 10,
   passingScore: 80,
   focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
   scoreInCommitMessage: false,
+  configVersion: 1,
 };
 
 // === Project Registry ===

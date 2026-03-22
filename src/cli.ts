@@ -12,7 +12,13 @@ import { createLLMClient } from './core/llm.js';
 import { runQuiz } from './commands/quiz.js';
 import { runInit } from './commands/init.js';
 import { runHookInstall, runHookUninstall } from './commands/hook.js';
+import { runConfigSet } from './commands/config-cmd.js';
 import type { ConfigStore, Logger } from './types.js';
+
+// __VERSION__ is injected by tsup at build time via `define`.
+// At test time it's not defined, so we fall back to '0.0.0-dev'.
+declare const __VERSION__: string;
+const VERSION: string = typeof __VERSION__ !== 'undefined' ? __VERSION__ : '0.0.0-dev';
 
 function createLogger(): Logger {
   let spinner: Ora | null = null;
@@ -51,7 +57,7 @@ export function createCli(): Command {
   program
     .name('arivcode')
     .description('Quiz yourself on code changes before committing')
-    .version('0.1.0');
+    .version(VERSION);
 
   program
     .command('quiz')
@@ -84,6 +90,7 @@ export function createCli(): Command {
     .command('init')
     .description('Setup arivcode configuration')
     .option('--global', 'Save config globally instead of per-project')
+    .option('--advanced', 'Show all configuration options')
     .action(async (opts) => {
       const logger = createLogger();
       const configStore = createConfigStore();
@@ -93,7 +100,7 @@ export function createCli(): Command {
         prompter,
         configStore,
         logger,
-        options: { global: opts.global },
+        options: { global: opts.global, advanced: opts.advanced },
         fs: createNodeFs(),
         projectDir: process.cwd(),
       });
@@ -134,6 +141,38 @@ export function createCli(): Command {
         projectDir: process.cwd(),
       });
       process.exit(exitCode);
+    });
+
+  const configCmd = program.command('config').description('Manage configuration');
+
+  configCmd
+    .command('set <key> <value>')
+    .description('Set a config value (e.g. arivcode config set passingScore 70)')
+    .option('--global', 'Update global config instead of per-project')
+    .action(async (key, value, opts) => {
+      const logger = createLogger();
+      const configStore = createConfigStore();
+      const scope = opts.global ? 'global' : 'project';
+
+      const exitCode = await runConfigSet({ key, value, configStore, logger, scope });
+      process.exit(exitCode);
+    });
+
+  program
+    .command('upgrade')
+    .description('Upgrade arivcode to the latest version')
+    .action(async () => {
+      const logger = createLogger();
+      const runner = createNodeProcessRunner();
+
+      logger.info(`Current version: ${VERSION}`);
+      logger.startSpinner('Upgrading arivcode...');
+      try {
+        await runner.exec('npm update -g arivcode');
+        logger.stopSpinner(true, 'arivcode upgraded successfully');
+      } catch {
+        logger.stopSpinner(false, 'Upgrade failed. Try manually: npm update -g arivcode');
+      }
     });
 
   return program;
