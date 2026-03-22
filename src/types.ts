@@ -56,7 +56,7 @@ export interface ProjectRegistry {
   projects: Record<string, ProjectRegistryEntry>;
 }
 
-// === Quiz (Zod schemas for generateObject) ===
+// === Quiz (Zod schemas for generateText) ===
 
 export const quizQuestionSchema = z.object({
   question: z.string(),

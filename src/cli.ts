@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { chmod } from 'fs/promises';
-import { join } from 'path';
+import { chmod } from 'node:fs/promises';
+import { join } from 'node:path';
 import chalk from 'chalk';
 import ora, { type Ora } from 'ora';
 import { createNodeFs } from './adapters/node-fs.js';

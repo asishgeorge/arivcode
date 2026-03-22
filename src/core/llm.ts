@@ -1,4 +1,4 @@
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -32,9 +32,9 @@ export function createLLMClient(config: ArivConfig): LLMClient {
       const model = provider(cfg.model);
       const { system, user } = buildQuizPrompt(context, cfg);
 
-      const { object } = await generateObject({
+      const { output: object } = await generateText({
         model,
-        schema: quizResponseSchema,
+        output: Output.object({ schema: quizResponseSchema }),
         system,
         prompt: user,
       });
