@@ -20,7 +20,8 @@ function makeContext(overrides: Partial<QuizContext> = {}): QuizContext {
     diff: sampleDiff,
     repoTree: 'src/utils.ts\nsrc/index.ts\npackage.json',
     touchedFileContents: {
-      'src/utils.ts': 'import { newFn } from "./new";\nexport function calc(a: number) { return newFn(a); }',
+      'src/utils.ts':
+        'import { newFn } from "./new";\nexport function calc(a: number) { return newFn(a); }',
     },
     questionCount: 8,
     ...overrides,

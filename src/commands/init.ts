@@ -24,7 +24,11 @@ export async function runInit(deps: InitDeps): Promise<void> {
   const modelsByProvider: Record<string, string[]> = {
     openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1-nano'],
     google: ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'],
-    anthropic: ['claude-sonnet-4-5-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-20250514'],
+    anthropic: [
+      'claude-sonnet-4-5-20250514',
+      'claude-haiku-4-5-20251001',
+      'claude-opus-4-20250514',
+    ],
   };
 
   const { provider } = await prompter.prompt([
@@ -114,7 +118,8 @@ export async function runInit(deps: InitDeps): Promise<void> {
     difficulty: answers.difficulty,
     minLines: Number(answers.minLines),
     passingScore: Number(answers.passingScore),
-    focusAreas: focusAreas.length > 0 ? focusAreas : ['syntax', 'execution', 'architecture', 'edge-cases'],
+    focusAreas:
+      focusAreas.length > 0 ? focusAreas : ['syntax', 'execution', 'architecture', 'edge-cases'],
   };
 
   const scope = options.global ? 'global' : 'project';
@@ -130,7 +135,7 @@ export async function runInit(deps: InitDeps): Promise<void> {
         message: 'Would you like to install a git pre-commit hook?',
         choices: [
           { name: 'Yes — run quiz before every commit', value: true },
-          { name: 'No — I\'ll set it up later', value: false },
+          { name: "No — I'll set it up later", value: false },
         ],
       },
     ]);

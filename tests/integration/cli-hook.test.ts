@@ -62,7 +62,11 @@ describe('hook install', () => {
     const logger = createMockLogger();
 
     await runHookInstall({ fs, logger, projectDir: '/project' });
-    expect(logger.messages.some((m) => m.includes('existing') || m.includes('overwrite') || m.includes('replaced'))).toBe(true);
+    expect(
+      logger.messages.some(
+        (m) => m.includes('existing') || m.includes('overwrite') || m.includes('replaced'),
+      ),
+    ).toBe(true);
   });
 
   it('fails if .git directory does not exist', async () => {
@@ -104,6 +108,8 @@ describe('hook uninstall', () => {
     const logger = createMockLogger();
 
     await runHookUninstall({ fs, logger, projectDir: '/project' });
-    expect(logger.messages.some((m) => m.includes('No pre-commit hook') || m.includes('not found'))).toBe(true);
+    expect(
+      logger.messages.some((m) => m.includes('No pre-commit hook') || m.includes('not found')),
+    ).toBe(true);
   });
 });

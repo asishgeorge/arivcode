@@ -5,16 +5,45 @@ const MAX_TOTAL_LENGTH = 50000;
 // === Language Detection ===
 
 const EXTENSION_MAP: Record<string, string> = {
-  '.ts': 'TypeScript', '.tsx': 'TypeScript (React)', '.js': 'JavaScript',
-  '.jsx': 'JavaScript (React)', '.py': 'Python', '.go': 'Go', '.rs': 'Rust',
-  '.java': 'Java', '.kt': 'Kotlin', '.swift': 'Swift', '.rb': 'Ruby',
-  '.php': 'PHP', '.c': 'C', '.cpp': 'C++', '.h': 'C/C++', '.cs': 'C#',
-  '.scala': 'Scala', '.dart': 'Dart', '.lua': 'Lua', '.r': 'R',
-  '.sh': 'Shell', '.bash': 'Shell', '.zsh': 'Shell',
-  '.sql': 'SQL', '.html': 'HTML', '.css': 'CSS', '.scss': 'SCSS',
-  '.json': 'JSON', '.yaml': 'YAML', '.yml': 'YAML', '.toml': 'TOML',
-  '.xml': 'XML', '.md': 'Markdown', '.vue': 'Vue', '.svelte': 'Svelte',
-  '.ex': 'Elixir', '.exs': 'Elixir', '.erl': 'Erlang', '.zig': 'Zig',
+  '.ts': 'TypeScript',
+  '.tsx': 'TypeScript (React)',
+  '.js': 'JavaScript',
+  '.jsx': 'JavaScript (React)',
+  '.py': 'Python',
+  '.go': 'Go',
+  '.rs': 'Rust',
+  '.java': 'Java',
+  '.kt': 'Kotlin',
+  '.swift': 'Swift',
+  '.rb': 'Ruby',
+  '.php': 'PHP',
+  '.c': 'C',
+  '.cpp': 'C++',
+  '.h': 'C/C++',
+  '.cs': 'C#',
+  '.scala': 'Scala',
+  '.dart': 'Dart',
+  '.lua': 'Lua',
+  '.r': 'R',
+  '.sh': 'Shell',
+  '.bash': 'Shell',
+  '.zsh': 'Shell',
+  '.sql': 'SQL',
+  '.html': 'HTML',
+  '.css': 'CSS',
+  '.scss': 'SCSS',
+  '.json': 'JSON',
+  '.yaml': 'YAML',
+  '.yml': 'YAML',
+  '.toml': 'TOML',
+  '.xml': 'XML',
+  '.md': 'Markdown',
+  '.vue': 'Vue',
+  '.svelte': 'Svelte',
+  '.ex': 'Elixir',
+  '.exs': 'Elixir',
+  '.erl': 'Erlang',
+  '.zig': 'Zig',
 };
 
 export function extractLanguagesFromDiff(diff: string): string[] {
@@ -59,10 +88,14 @@ const DIFFICULTY_GUIDANCE: Record<string, string> = {
 // === Focus Area Instructions ===
 
 const FOCUS_DESCRIPTIONS: Record<FocusArea, string> = {
-  syntax: 'Syntax & API: specific syntax, language constructs, API signatures, and method calls used in the diff',
-  execution: 'Execution & Flow: how the code executes, control flow paths, state changes, and runtime behavior',
-  architecture: 'Architecture & Design: patterns, design decisions, trade-offs, and structural choices',
-  'edge-cases': 'Edge Cases & Errors: boundary conditions, error handling paths, failure modes, and defensive coding',
+  syntax:
+    'Syntax & API: specific syntax, language constructs, API signatures, and method calls used in the diff',
+  execution:
+    'Execution & Flow: how the code executes, control flow paths, state changes, and runtime behavior',
+  architecture:
+    'Architecture & Design: patterns, design decisions, trade-offs, and structural choices',
+  'edge-cases':
+    'Edge Cases & Errors: boundary conditions, error handling paths, failure modes, and defensive coding',
 };
 
 function buildFocusAreaInstructions(focusAreas: FocusArea[], questionCount: number): string {
@@ -150,9 +183,7 @@ export function buildQuizPrompt(
   config: ArivConfig,
 ): { system: string; user: string } {
   const languages = extractLanguagesFromDiff(context.diff);
-  const langLine = languages.length > 0
-    ? `Languages in this diff: ${languages.join(', ')}`
-    : '';
+  const langLine = languages.length > 0 ? `Languages in this diff: ${languages.join(', ')}` : '';
 
   const difficulty = DIFFICULTY_GUIDANCE[config.difficulty] ?? DIFFICULTY_GUIDANCE.intermediate;
   const focusInstructions = buildFocusAreaInstructions(config.focusAreas, context.questionCount);

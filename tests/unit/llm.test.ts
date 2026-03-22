@@ -19,9 +19,7 @@ describe('llm', () => {
     });
 
     it('throws on unknown provider', () => {
-      expect(() => resolveProvider('mistral' as any, 'key')).toThrow(
-        /Unsupported provider/,
-      );
+      expect(() => resolveProvider('mistral' as any, 'key')).toThrow(/Unsupported provider/);
     });
   });
 });

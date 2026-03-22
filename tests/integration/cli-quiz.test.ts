@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { runQuiz } from '../../src/commands/quiz.js';
 import type {
   ArivConfig,
   ConfigStore,
   DiffResult,
+  FileSystem,
   GitClient,
   LLMClient,
   Logger,
@@ -69,6 +70,17 @@ function createMockPresenter(answers: string[]): QuizPresenter {
   return { presentQuiz: async () => answers };
 }
 
+function createMockFs(): FileSystem {
+  return {
+    readFile: async () => '',
+    writeFile: async () => {},
+    exists: async () => false,
+    unlink: async () => {},
+    mkdir: async () => {},
+    chmod: async () => {},
+  };
+}
+
 function createMockLogger(): Logger & { messages: string[] } {
   const messages: string[] = [];
   return {
@@ -91,6 +103,8 @@ describe('quiz command', () => {
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(0);
     expect(logger.messages.some((m) => m.includes('skip'))).toBe(true);
@@ -100,11 +114,16 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter(['A', 'B', 'C', 'B']), // 100%
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(0);
   });
@@ -112,11 +131,16 @@ describe('quiz command', () => {
   it('fails with exit 1 when score < 80%', async () => {
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter(['D', 'D', 'D', 'D']), // 0%
       logger: createMockLogger(),
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
   });
@@ -125,11 +149,16 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter([]),
       logger,
       options: { skip: true },
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(0);
     expect(logger.messages.some((m) => m.includes('skip'))).toBe(true);
@@ -139,11 +168,16 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore({ ...DEFAULT_CONFIG, apiKey: '' }),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
     expect(logger.messages.some((m) => m.includes('apiKey'))).toBe(true);
@@ -158,38 +192,54 @@ describe('quiz command', () => {
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(0);
     expect(logger.messages.some((m) => m.includes('no staged changes'))).toBe(true);
   });
 
   it('shows wrong answers even when quiz passes', async () => {
-    const logger = createMockLogger();
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     // 3 out of 4 correct = 75%, with passingScore 60 this passes
     const exitCode = await runQuiz({
       configStore: createMockConfigStore({ ...validConfig, passingScore: 60 }),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: createMockPresenter(['A', 'B', 'C', 'D']), // 4th is wrong (correct: B)
-      logger,
+      logger: createMockLogger(),
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
+    const output = consoleSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    consoleSpy.mockRestore();
     expect(exitCode).toBe(0);
-    expect(logger.messages.some((m) => m.includes('Quiz passed'))).toBe(true);
-    expect(logger.messages.some((m) => m.includes('Incorrect answers'))).toBe(true);
+    expect(output).toContain('Quiz passed');
+    expect(output).toContain('Incorrect Answers');
   });
 
   it('handles network errors gracefully', async () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: {
-        generateQuiz: async () => { throw new Error('fetch failed'); },
+        generateQuiz: async () => {
+          throw new Error('fetch failed');
+        },
       },
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
     expect(logger.messages.some((m) => m.includes('Network error'))).toBe(true);
@@ -199,13 +249,20 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: {
-        generateQuiz: async () => { throw new Error('401 Unauthorized'); },
+        generateQuiz: async () => {
+          throw new Error('401 Unauthorized');
+        },
       },
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
     expect(logger.messages.some((m) => m.includes('Invalid API key'))).toBe(true);
@@ -215,13 +272,20 @@ describe('quiz command', () => {
     const logger = createMockLogger();
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: {
-        generateQuiz: async () => { throw new Error('429 rate limit exceeded'); },
+        generateQuiz: async () => {
+          throw new Error('429 rate limit exceeded');
+        },
       },
       presenter: createMockPresenter([]),
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
     expect(logger.messages.some((m) => m.includes('Rate limited'))).toBe(true);
@@ -233,13 +297,20 @@ describe('quiz command', () => {
     error.name = 'ExitPromptError';
     const exitCode = await runQuiz({
       configStore: createMockConfigStore(),
-      gitClient: createMockGitClient({ raw: 'diff --git a/f.ts b/f.ts\n+big diff', linesChanged: 20 }),
+      gitClient: createMockGitClient({
+        raw: 'diff --git a/f.ts b/f.ts\n+big diff',
+        linesChanged: 20,
+      }),
       llmClient: createMockLLMClient(),
       presenter: {
-        presentQuiz: async () => { throw error; },
+        presentQuiz: async () => {
+          throw error;
+        },
       },
       logger,
       options: {},
+      fs: createMockFs(),
+      projectDir: '/tmp/test',
     });
     expect(exitCode).toBe(1);
     expect(logger.messages.some((m) => m.includes('cancelled'))).toBe(true);

@@ -130,9 +130,9 @@ describe('config', () => {
 
     it('throws when project scope used without runner', async () => {
       const fs = createMockFs();
-      await expect(
-        saveConfig(fs, { apiKey: 'sk-test' }, 'project', '/project'),
-      ).rejects.toThrow(/runner/);
+      await expect(saveConfig(fs, { apiKey: 'sk-test' }, 'project', '/project')).rejects.toThrow(
+        /runner/,
+      );
     });
   });
 

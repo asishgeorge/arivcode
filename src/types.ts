@@ -29,6 +29,7 @@ export interface ArivConfig {
   minLines: number;
   passingScore: number;
   focusAreas: FocusArea[];
+  scoreInCommitMessage: boolean;
 }
 
 export type PartialArivConfig = Partial<ArivConfig>;
@@ -41,6 +42,7 @@ export const DEFAULT_CONFIG: ArivConfig = {
   minLines: 10,
   passingScore: 80,
   focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
+  scoreInCommitMessage: false,
 };
 
 // === Project Registry ===

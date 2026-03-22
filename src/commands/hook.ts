@@ -9,6 +9,20 @@ else
 fi
 `;
 
+const PREPARE_COMMIT_MSG_HOOK = `#!/bin/sh
+# arivcode: prepend quiz score to commit message
+SCORE_FILE="$(git rev-parse --git-dir)/ARIVCODE_SCORE"
+if [ -f "$SCORE_FILE" ]; then
+  COMMIT_MSG_FILE="$1"
+  ORIGINAL=$(cat "$COMMIT_MSG_FILE")
+  # Skip if score is already prepended (e.g. amend)
+  echo "$ORIGINAL" | grep -q "^arivcode" && { rm -f "$SCORE_FILE"; exit 0; }
+  SCORE=$(cat "$SCORE_FILE")
+  echo "$SCORE | $ORIGINAL" > "$COMMIT_MSG_FILE"
+  rm -f "$SCORE_FILE"
+fi
+`;
+
 export interface HookDeps {
   fs: FileSystem;
   logger: Logger;
@@ -18,7 +32,8 @@ export interface HookDeps {
 export async function runHookInstall(deps: HookDeps): Promise<number> {
   const { fs, logger, projectDir } = deps;
   const gitDir = `${projectDir}/.git`;
-  const hookPath = `${gitDir}/hooks/pre-commit`;
+  const preCommitPath = `${gitDir}/hooks/pre-commit`;
+  const prepareCommitMsgPath = `${gitDir}/hooks/prepare-commit-msg`;
 
   const gitExists = await fs.exists(`${gitDir}/HEAD`);
   if (!gitExists) {
@@ -26,34 +41,51 @@ export async function runHookInstall(deps: HookDeps): Promise<number> {
     return 1;
   }
 
-  const hookExists = await fs.exists(hookPath);
-  if (hookExists) {
+  const preCommitExists = await fs.exists(preCommitPath);
+  if (preCommitExists) {
     logger.warn('An existing pre-commit hook was found and will be replaced.');
   }
 
+  const prepareExists = await fs.exists(prepareCommitMsgPath);
+  if (prepareExists) {
+    logger.warn('An existing prepare-commit-msg hook was found and will be replaced.');
+  }
+
   await fs.mkdir(`${gitDir}/hooks`, { recursive: true });
-  await fs.writeFile(hookPath, HOOK_SCRIPT);
-  logger.info('Pre-commit hook installed successfully.');
+  await fs.writeFile(preCommitPath, HOOK_SCRIPT);
+  await fs.writeFile(prepareCommitMsgPath, PREPARE_COMMIT_MSG_HOOK);
+  logger.info('Hooks installed: pre-commit, prepare-commit-msg');
   return 0;
 }
 
-export async function runHookUninstall(deps: HookDeps): Promise<number> {
-  const { fs, logger, projectDir } = deps;
-  const hookPath = `${projectDir}/.git/hooks/pre-commit`;
-
+async function uninstallHook(
+  fs: FileSystem,
+  hookPath: string,
+  hookName: string,
+  logger: Logger,
+): Promise<void> {
   const exists = await fs.exists(hookPath);
   if (!exists) {
-    logger.info('No pre-commit hook found.');
-    return 0;
+    logger.info(`No ${hookName} hook found.`);
+    return;
   }
 
   const content = await fs.readFile(hookPath);
   if (!content.includes('arivcode')) {
-    logger.warn('Pre-commit hook exists but is not managed by arivcode. Leaving it in place.');
-    return 0;
+    logger.warn(`${hookName} hook exists but is not managed by arivcode. Leaving it in place.`);
+    return;
   }
 
   await fs.unlink(hookPath);
-  logger.info('Pre-commit hook removed.');
+  logger.info(`${hookName} hook removed.`);
+}
+
+export async function runHookUninstall(deps: HookDeps): Promise<number> {
+  const { fs, logger, projectDir } = deps;
+  const hooksDir = `${projectDir}/.git/hooks`;
+
+  await uninstallHook(fs, `${hooksDir}/pre-commit`, 'pre-commit', logger);
+  await uninstallHook(fs, `${hooksDir}/prepare-commit-msg`, 'prepare-commit-msg', logger);
+
   return 0;
 }

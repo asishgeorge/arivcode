@@ -4,10 +4,7 @@ import { join } from 'path';
 import { createGitClient, countChangedLines, extractPathsFromDiff } from '../../src/core/git.js';
 import type { ProcessRunner } from '../../src/types.js';
 
-const sampleDiff = readFileSync(
-  join(import.meta.dirname, '../fixtures/sample-diff.txt'),
-  'utf-8',
-);
+const sampleDiff = readFileSync(join(import.meta.dirname, '../fixtures/sample-diff.txt'), 'utf-8');
 
 function createMockRunner(responses: Record<string, string> = {}): ProcessRunner {
   return {
@@ -15,7 +12,8 @@ function createMockRunner(responses: Record<string, string> = {}): ProcessRunner
       if (cmd in responses) return { stdout: responses[cmd], stderr: '' };
       // Default: return the sampleDiff for git diff --staged
       if (cmd === 'git diff --staged') return { stdout: sampleDiff, stderr: '' };
-      if (cmd === 'git ls-files') return { stdout: 'src/index.ts\nsrc/utils.ts\npackage.json\n', stderr: '' };
+      if (cmd === 'git ls-files')
+        return { stdout: 'src/index.ts\nsrc/utils.ts\npackage.json\n', stderr: '' };
       if (cmd.startsWith('git show :')) {
         const path = cmd.replace('git show :', '');
         return { stdout: `// contents of ${path}`, stderr: '' };

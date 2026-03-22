@@ -74,6 +74,8 @@ export function createCli(): Command {
         presenter,
         logger,
         options: { skip: opts.skip },
+        fs,
+        projectDir: process.cwd(),
       });
       process.exit(exitCode);
     });
@@ -97,9 +99,7 @@ export function createCli(): Command {
       });
     });
 
-  const hook = program
-    .command('hook')
-    .description('Manage git pre-commit hook');
+  const hook = program.command('hook').description('Manage git pre-commit hook');
 
   hook
     .command('install')
@@ -116,6 +116,7 @@ export function createCli(): Command {
       });
       if (exitCode === 0) {
         await chmod(join(cwd, '.git', 'hooks', 'pre-commit'), 0o755);
+        await chmod(join(cwd, '.git', 'hooks', 'prepare-commit-msg'), 0o755);
       }
       process.exit(exitCode);
     });
