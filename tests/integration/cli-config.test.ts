@@ -149,6 +149,46 @@ describe('config set command', () => {
     expect(getSaved().scope).toBe('global');
   });
 
+  it('sets mode to push', async () => {
+    const { store, getSaved } = createMockConfigStore();
+    const exitCode = await runConfigSet({
+      key: 'mode',
+      value: 'push',
+      configStore: store,
+      logger: createMockLogger(),
+      scope: 'project',
+    });
+    expect(exitCode).toBe(0);
+    expect(getSaved().config).toEqual({ mode: 'push' });
+  });
+
+  it('sets mode to commit', async () => {
+    const { store, getSaved } = createMockConfigStore();
+    const exitCode = await runConfigSet({
+      key: 'mode',
+      value: 'commit',
+      configStore: store,
+      logger: createMockLogger(),
+      scope: 'project',
+    });
+    expect(exitCode).toBe(0);
+    expect(getSaved().config).toEqual({ mode: 'commit' });
+  });
+
+  it('rejects invalid mode value', async () => {
+    const { store } = createMockConfigStore();
+    const logger = createMockLogger();
+    const exitCode = await runConfigSet({
+      key: 'mode',
+      value: 'invalid',
+      configStore: store,
+      logger,
+      scope: 'project',
+    });
+    expect(exitCode).toBe(1);
+    expect(logger.messages.some((m) => m.includes('must be one of'))).toBe(true);
+  });
+
   it('rejects setting configVersion', async () => {
     const { store } = createMockConfigStore();
     const logger = createMockLogger();

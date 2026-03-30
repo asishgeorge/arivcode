@@ -18,6 +18,10 @@ function createMockRunner(responses: Record<string, string> = {}): ProcessRunner
         const path = cmd.replace('git show :', '');
         return { stdout: `// contents of ${path}`, stderr: '' };
       }
+      if (cmd.startsWith('git show HEAD:')) {
+        const path = cmd.replace('git show HEAD:', '');
+        return { stdout: `// HEAD contents of ${path}`, stderr: '' };
+      }
       return { stdout: '', stderr: '' };
     },
   };
@@ -32,33 +36,75 @@ function createFailingRunner(error: Error): ProcessRunner {
 }
 
 describe('git', () => {
-  describe('getStagedDiff', () => {
+  describe('getDiff (commit mode)', () => {
     it('runs "git diff --staged" and returns raw output', async () => {
       const runner = createMockRunner();
-      const client = createGitClient(runner);
-      const result = await client.getStagedDiff();
+      const client = createGitClient(runner, 'commit');
+      const result = await client.getDiff();
       expect(result.raw).toBe(sampleDiff);
     });
 
     it('counts lines changed (additions + deletions)', async () => {
       const runner = createMockRunner();
-      const client = createGitClient(runner);
-      const result = await client.getStagedDiff();
+      const client = createGitClient(runner, 'commit');
+      const result = await client.getDiff();
       expect(result.linesChanged).toBe(9);
     });
 
     it('returns linesChanged: 0 for empty diff', async () => {
       const runner = createMockRunner({ 'git diff --staged': '' });
-      const client = createGitClient(runner);
-      const result = await client.getStagedDiff();
+      const client = createGitClient(runner, 'commit');
+      const result = await client.getDiff();
       expect(result.raw).toBe('');
       expect(result.linesChanged).toBe(0);
     });
 
     it('throws descriptive error when not in a git repo', async () => {
       const runner = createFailingRunner(new Error('fatal: not a git repository'));
+      const client = createGitClient(runner, 'commit');
+      await expect(client.getDiff()).rejects.toThrow(/not a git repository/);
+    });
+
+    it('defaults to commit mode when mode is omitted', async () => {
+      const runner = createMockRunner();
       const client = createGitClient(runner);
-      await expect(client.getStagedDiff()).rejects.toThrow(/not a git repository/);
+      const result = await client.getDiff();
+      expect(result.raw).toBe(sampleDiff);
+    });
+  });
+
+  describe('getDiff (push mode)', () => {
+    it('runs "git diff @{upstream}..HEAD" in push mode', async () => {
+      const pushDiff = '+pushed line\n-old line';
+      const runner = createMockRunner({ 'git diff @{upstream}..HEAD': pushDiff });
+      const client = createGitClient(runner, 'push');
+      const result = await client.getDiff();
+      expect(result.raw).toBe(pushDiff);
+      expect(result.linesChanged).toBe(2);
+    });
+
+    it('falls back to origin/main when no upstream is set', async () => {
+      const fallbackDiff = '+fallback line';
+      const runner: ProcessRunner = {
+        exec: async (cmd: string) => {
+          if (cmd === 'git diff @{upstream}..HEAD') throw new Error('no upstream');
+          if (cmd === 'git diff origin/main..HEAD')
+            return { stdout: fallbackDiff, stderr: '' };
+          return { stdout: '', stderr: '' };
+        },
+      };
+      const client = createGitClient(runner, 'push');
+      const result = await client.getDiff();
+      expect(result.raw).toBe(fallbackDiff);
+      expect(result.linesChanged).toBe(1);
+    });
+
+    it('returns empty diff when nothing to push', async () => {
+      const runner = createMockRunner({ 'git diff @{upstream}..HEAD': '' });
+      const client = createGitClient(runner, 'push');
+      const result = await client.getDiff();
+      expect(result.raw).toBe('');
+      expect(result.linesChanged).toBe(0);
     });
   });
 
@@ -72,10 +118,10 @@ describe('git', () => {
     });
   });
 
-  describe('getFileContents', () => {
-    it('reads file contents via git show', async () => {
+  describe('getFileContents (commit mode)', () => {
+    it('reads file contents via git show :<path>', async () => {
       const runner = createMockRunner();
-      const client = createGitClient(runner);
+      const client = createGitClient(runner, 'commit');
       const contents = await client.getFileContents(['src/utils.ts']);
       expect(contents['src/utils.ts']).toContain('contents of src/utils.ts');
     });
@@ -87,7 +133,28 @@ describe('git', () => {
           return { stdout: '', stderr: '' };
         },
       };
-      const client = createGitClient(runner);
+      const client = createGitClient(runner, 'commit');
+      const contents = await client.getFileContents(['deleted-file.ts']);
+      expect(contents).toEqual({});
+    });
+  });
+
+  describe('getFileContents (push mode)', () => {
+    it('reads file contents via git show HEAD:<path>', async () => {
+      const runner = createMockRunner();
+      const client = createGitClient(runner, 'push');
+      const contents = await client.getFileContents(['src/utils.ts']);
+      expect(contents['src/utils.ts']).toContain('HEAD contents of src/utils.ts');
+    });
+
+    it('skips files that fail to read in push mode', async () => {
+      const runner: ProcessRunner = {
+        exec: async (cmd: string) => {
+          if (cmd.startsWith('git show HEAD:')) throw new Error('path not found');
+          return { stdout: '', stderr: '' };
+        },
+      };
+      const client = createGitClient(runner, 'push');
       const contents = await client.getFileContents(['deleted-file.ts']);
       expect(contents).toEqual({});
     });

@@ -140,7 +140,7 @@ export async function runQuiz(deps: QuizDeps): Promise<number> {
       return 1;
     }
 
-    const diff = await gitClient.getStagedDiff();
+    const diff = await gitClient.getDiff();
 
     if (!diff.raw || diff.linesChanged === 0) {
       logger.info('No staged changes found, nothing to quiz on. Exiting — no staged changes.');

@@ -90,10 +90,24 @@ export async function runInit(deps: InitDeps): Promise<void> {
 
   answers.provider = provider;
 
+  const { mode } = await prompter.prompt([
+    {
+      type: 'list',
+      name: 'mode',
+      message: 'When should the quiz run?',
+      choices: [
+        { name: 'Every commit — thorough review of each change', value: 'commit' },
+        { name: 'Every push   — stay in flow, quiz before sharing', value: 'push' },
+      ],
+      default: existing.mode ?? 'commit',
+    },
+  ]);
+
   const config: PartialArivConfig = {
     provider: answers.provider,
     apiKey: answers.apiKey,
     model: answers.model,
+    mode,
   };
 
   if (options.advanced) {
@@ -175,22 +189,25 @@ export async function runInit(deps: InitDeps): Promise<void> {
   await configStore.saveConfig(config, scope);
   logger.info(`Config saved (${scope}).`);
 
-  // Offer to install git pre-commit hook (only for project-scoped init)
+  // Offer to install git hook (only for project-scoped init)
   if (!options.global && fs && projectDir) {
+    const hookType = mode === 'push' ? 'pre-push' : 'pre-commit';
+    const hookDesc = mode === 'push' ? 'run quiz before every push' : 'run quiz before every commit';
+
     const { installHook } = await prompter.prompt([
       {
         type: 'list',
         name: 'installHook',
-        message: 'Would you like to install a git pre-commit hook?',
+        message: `Would you like to install a git ${hookType} hook?`,
         choices: [
-          { name: 'Yes — run quiz before every commit', value: true },
+          { name: `Yes — ${hookDesc}`, value: true },
           { name: "No — I'll set it up later", value: false },
         ],
       },
     ]);
 
     if (installHook) {
-      await runHookInstall({ fs, logger, projectDir });
+      await runHookInstall({ fs, logger, projectDir, mode });
     }
   }
 }

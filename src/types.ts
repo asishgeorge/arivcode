@@ -5,6 +5,11 @@ import { z } from 'zod';
 export const SUPPORTED_PROVIDERS = ['openai', 'google', 'anthropic'] as const;
 export type Provider = (typeof SUPPORTED_PROVIDERS)[number];
 
+// === Quiz Modes ===
+
+export const QUIZ_MODES = ['commit', 'push'] as const;
+export type QuizMode = (typeof QUIZ_MODES)[number];
+
 // === Focus Areas ===
 
 export const FOCUS_AREAS = ['syntax', 'execution', 'architecture', 'edge-cases'] as const;
@@ -30,6 +35,7 @@ export interface ArivConfig {
   passingScore: number;
   focusAreas: FocusArea[];
   scoreInCommitMessage: boolean;
+  mode: QuizMode;
   configVersion: number;
 }
 
@@ -44,6 +50,7 @@ export const DEFAULT_CONFIG: ArivConfig = {
   passingScore: 80,
   focusAreas: ['syntax', 'execution', 'architecture', 'edge-cases'],
   scoreInCommitMessage: false,
+  mode: 'commit',
   configVersion: 1,
 };
 
@@ -112,7 +119,7 @@ export interface DiffResult {
 // === Dependency Injection Interfaces ===
 
 export interface GitClient {
-  getStagedDiff(): Promise<DiffResult>;
+  getDiff(): Promise<DiffResult>;
   getRepoTree(): Promise<string>;
   getFileContents(paths: string[]): Promise<Record<string, string>>;
 }

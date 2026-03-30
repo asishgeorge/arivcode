@@ -1,6 +1,7 @@
 import {
   DEFAULT_CONFIG,
   FOCUS_AREAS,
+  QUIZ_MODES,
   SUPPORTED_PROVIDERS,
   type ArivConfig,
   type ConfigStore,
@@ -68,6 +69,12 @@ function coerceValue(key: keyof ArivConfig, raw: string): unknown {
       if (raw === 'false') return false;
       throw new Error('scoreInCommitMessage must be true or false');
     }
+
+    case 'mode':
+      if (!(QUIZ_MODES as readonly string[]).includes(raw)) {
+        throw new Error(`mode must be one of: ${QUIZ_MODES.join(', ')}`);
+      }
+      return raw;
 
     case 'configVersion':
       throw new Error('configVersion cannot be set manually');

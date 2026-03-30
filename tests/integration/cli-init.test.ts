@@ -125,6 +125,45 @@ describe('init command', () => {
     expect(config!.focusAreas).toEqual(['syntax', 'architecture']);
   });
 
+  it('saves mode from default init flow', async () => {
+    const answers = {
+      provider: 'openai',
+      apiKey: 'sk-test-123',
+      model: 'gpt-4o-mini',
+      mode: 'push',
+      installHook: false,
+    };
+    const { store, getSaved } = createMockConfigStore();
+    await runInit({
+      prompter: createMockPrompter(answers),
+      configStore: store,
+      logger: createMockLogger(),
+      options: {},
+    });
+    const { config } = getSaved();
+    expect(config).toBeDefined();
+    expect(config!.mode).toBe('push');
+  });
+
+  it('defaults mode to commit when not specified', async () => {
+    const answers = {
+      provider: 'openai',
+      apiKey: 'sk-test-123',
+      model: 'gpt-4o-mini',
+      mode: 'commit',
+      installHook: false,
+    };
+    const { store, getSaved } = createMockConfigStore();
+    await runInit({
+      prompter: createMockPrompter(answers),
+      configStore: store,
+      logger: createMockLogger(),
+      options: {},
+    });
+    const { config } = getSaved();
+    expect(config!.mode).toBe('commit');
+  });
+
   it('defaults to all focus areas when none selected in advanced mode', async () => {
     const { store, getSaved } = createMockConfigStore();
     await runInit({

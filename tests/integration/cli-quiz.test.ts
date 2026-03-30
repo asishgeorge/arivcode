@@ -52,7 +52,7 @@ function createMockConfigStore(config: ArivConfig = validConfig): ConfigStore {
 
 function createMockGitClient(diff: DiffResult): GitClient {
   return {
-    getStagedDiff: async () => diff,
+    getDiff: async () => diff,
     getRepoTree: async () => 'src/index.ts\npackage.json',
     getFileContents: async () => ({ 'src/index.ts': '// file content' }),
   };

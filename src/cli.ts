@@ -69,7 +69,7 @@ export function createCli(): Command {
       const runner = createNodeProcessRunner();
       const configStore = createConfigStore();
       const config = await configStore.loadConfig();
-      const gitClient = createGitClient(runner);
+      const gitClient = createGitClient(runner, config.mode);
       const llmClient = createLLMClient(config);
       const presenter = createInquirerPresenter();
 
@@ -106,24 +106,33 @@ export function createCli(): Command {
       });
     });
 
-  const hook = program.command('hook').description('Manage git pre-commit hook');
+  const hook = program.command('hook').description('Manage git hooks');
 
   hook
     .command('install')
-    .description('Install git pre-commit hook')
-    .action(async () => {
+    .description('Install git hook (pre-commit or pre-push based on config)')
+    .option('--mode <mode>', 'Override hook mode (commit or push)')
+    .action(async (opts) => {
       const logger = createLogger();
       const fs = createNodeFs();
+      const configStore = createConfigStore();
+      const config = await configStore.loadConfig();
+      const mode = opts.mode ?? config.mode;
 
       const cwd = process.cwd();
       const exitCode = await runHookInstall({
         fs,
         logger,
         projectDir: cwd,
+        mode,
       });
       if (exitCode === 0) {
-        await chmod(join(cwd, '.git', 'hooks', 'pre-commit'), 0o755);
-        await chmod(join(cwd, '.git', 'hooks', 'prepare-commit-msg'), 0o755);
+        if (mode === 'push') {
+          await chmod(join(cwd, '.git', 'hooks', 'pre-push'), 0o755);
+        } else {
+          await chmod(join(cwd, '.git', 'hooks', 'pre-commit'), 0o755);
+          await chmod(join(cwd, '.git', 'hooks', 'prepare-commit-msg'), 0o755);
+        }
       }
       process.exit(exitCode);
     });
